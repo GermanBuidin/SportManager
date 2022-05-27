@@ -1,8 +1,22 @@
-# tasks.py
-# Импортируем созданный нами ранее экземпляр класса celery(app)
 from sport_items.celery import app
 
-# Декоратор @app.task, говорит celery о том, что эта функция является (task-ом) т.е. должна выполнятся в фоне.
+from .utils import DayAnalytic, WeekAnalytic, MonthAnalytic
+
+
+
 @app.task
-def supper_sum(x, y):
-    return x + y
+def day_analytic():
+    analytic = DayAnalytic()
+    analytic.make_data()
+
+
+@app.task
+def week_analytic():
+    analytic = WeekAnalytic()
+    analytic.make_data()
+
+
+@app.task
+def month_analytic():
+    analytic = MonthAnalytic()
+    analytic.make_data()

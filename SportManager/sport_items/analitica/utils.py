@@ -19,7 +19,7 @@ class Analitica:
             brand = value.brand
             return brand
 
-class Day(Analitica):
+class DayAnalytic(Analitica):
 
     TABLES = (
         (ETennis, 'analitica_etennis'),
@@ -33,7 +33,7 @@ class Day(Analitica):
             queries = table[0].objects.all()
             info = {}
             for query in queries:
-                sku = query.sku #.lower().replace('-', '').replace(' ', '').strip()
+                sku = query.sku
                 info[sku] = query
             data[table[1]] = info
         return data
@@ -108,7 +108,7 @@ class Day(Analitica):
     def get_delete_items(self, sku: dict, shop: str) -> bool:
         if shop in sku:
             data = datetime.date(datetime.now()) - sku[shop].data_update
-            if data == timedelta(days=1):
+            if data >= timedelta(days=1):
                 return True
         return False
 
@@ -129,11 +129,11 @@ class Day(Analitica):
         min_price = min(price.values())
         return min_price
 
-class Week(Analitica):
+class WeekAnalytic(Analitica):
 
-    def __init__(self, table):
+    def __init__(self):
         self.queries = DailyAnalytics.objects.filter(data_create__gte=date.today()-timedelta(days=7))
-        self.table = table
+        self.table = WeeklyAnalytics
 
     def get_data(self) -> dict:
         data = {}
@@ -253,8 +253,12 @@ class Week(Analitica):
             max_val = max(price, key=price.get)
             min_val = min(price, key=price.get)
             if max_val > min_val:
+                if min_p == 0:
+                    return 100
                 percent = (max_p-min_p) / (min_p / 100)
                 return percent
+            if max_p == 0:
+                return 100
             percent = (min_p - max_p) / (max_p / 100)
             return percent
 
@@ -300,13 +304,13 @@ class Week(Analitica):
             )
         analitica.save()
 
-class Month(Week):
+class MonthAnalytic(WeekAnalytic):
 
-    def __init__(self, table):
-        super().__init__(table)
+    def __init__(self):
+        super().__init__()
         self.queries = DailyAnalytics.objects.filter(data_create__gte=date.today()-timedelta(days=30))
+        self.table = MonthlyAnalytics
 
 
-
-i = Month(MonthlyAnalytics)
-i.make_data()
+# i = Month()
+# i.make_data()
