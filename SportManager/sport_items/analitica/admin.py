@@ -1,8 +1,28 @@
 from django.contrib import admin
+import csv
+import datetime
+from django.http import HttpResponse
 
 from .models import *
 
-from numpy import arange
+
+def export_to_csv(modeladmin, request, queryset):
+    opts = modeladmin.model._meta
+    response = HttpResponse(content_type='text/csv')
+    response['Content-Disposition'] = 'attachment; filename={}.csv'.format(opts.verbose_name)
+    writer = csv.writer(response)
+    fields = [field for field in opts.get_fields() if not field.many_to_many and not field.one_to_many]
+    writer.writerow([field.verbose_name for field in fields])
+    for obj in queryset:
+        data_row = []
+        for field in fields:
+            value = getattr(obj, field.name)
+            if isinstance(value, datetime.datetime):
+                value = value.strftime('%d/%m/%Y')
+            data_row.append(value)
+        writer.writerow(data_row)
+    return response
+export_to_csv.short_description = 'Export to CSV'
 
 
 class PriceFilter(admin.SimpleListFilter):
@@ -73,18 +93,27 @@ class ETennisAdmin(admin.ModelAdmin):
                      'is_sku')
     list_filter = (PriceFilter, DiscountFilter, BrandFilter, 'product_type', 'sport_type',
                    'is_sku')
+    actions = [export_to_csv]
+
 
 class DailyAdmin(admin.ModelAdmin):
-    list_display = ('brand', 'sku', 'title', 'best_price', 'discount_e_tennis',
-                    'discount_global_tennis', 'discount_tennis_pro', 'price_e_tennis',
-                    'price_global_tennis', 'price_tennis_pro')
-    list_display_links = ('brand', 'sku', 'title', 'best_price', 'discount_e_tennis',
-                    'discount_global_tennis', 'discount_tennis_pro', 'price_e_tennis',
-                    'price_global_tennis', 'price_tennis_pro')
-    search_fields = ('brand', 'title', 'best_price', 'discount')
+    list_display = ('brand', 'sku', 'title', 'best_price', 'avr_price', 'discount_e_tennis',
+                    'price_e_tennis', 'change_percent_e_tennis', 'discount_global_tennis',
+                    'price_global_tennis', 'change_percent_global_tennis', 'discount_tennis_pro',
+                     'price_tennis_pro', 'change_percent_tennis_pro')
+    list_display_links = ('brand', 'sku', 'title', 'best_price', 'avr_price', 'discount_e_tennis',
+                    'price_e_tennis', 'change_percent_e_tennis', 'discount_global_tennis',
+                    'price_global_tennis', 'change_percent_global_tennis', 'discount_tennis_pro',
+                     'price_tennis_pro', 'change_percent_tennis_pro')
+    search_fields = ('brand', 'sku', 'title', 'best_price', 'avr_price', 'discount_e_tennis',
+                    'price_e_tennis', 'change_percent_e_tennis', 'discount_global_tennis',
+                    'price_global_tennis', 'change_percent_global_tennis', 'discount_tennis_pro',
+                     'price_tennis_pro', 'change_percent_tennis_pro')
     list_filter = (BrandFilter, 'data_create', 'delete_from_e_tennis',
                     'delete_from_global_tennis', 'delete_from_tennis_pro', 'new_from_e_tennis',
                     'new_from_global_tennis', 'new_from_tennis_pro')
+    actions = [export_to_csv]
+
 
 class WeeklyAdmin(admin.ModelAdmin):
     list_display = ('brand', 'sku', 'title', 'best_avr_price', 'avr_discount_e_tennis',
@@ -93,10 +122,13 @@ class WeeklyAdmin(admin.ModelAdmin):
     list_display_links = ('brand', 'sku', 'title', 'best_avr_price', 'avr_discount_e_tennis',
                     'avr_discount_global_tennis', 'avr_discount_tennis_pro', 'avr_price_e_tennis',
                     'avr_price_global_tennis', 'avr_price_tennis_pro')
-    search_fields = ('brand', 'title', 'best_price', 'discount')
+    search_fields = ('brand', 'title', 'best_avr_price', 'avr_discount_e_tennis',
+                    'avr_discount_global_tennis', 'avr_discount_tennis_pro', 'avr_price_e_tennis',
+                    'avr_price_global_tennis', 'avr_price_tennis_pro')
     list_filter = (BrandFilter, 'data_create', 'delete_from_e_tennis',
                     'delete_from_global_tennis', 'delete_from_tennis_pro', 'new_from_e_tennis',
                     'new_from_global_tennis', 'new_from_tennis_pro')
+    actions = [export_to_csv]
 
 
 admin.site.register(ETennis, ETennisAdmin)

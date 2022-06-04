@@ -62,6 +62,7 @@ class DayAnalytic(Analitica):
             sku=information['sku'],
             title=information['title'],
             best_price=information['best_price'],
+            avr_price=information['avr_price'],
             discount_e_tennis=information['discount_e_tennis'],
             discount_global_tennis=information['discount_global_tennis'],
             discount_tennis_pro=information['discount_tennis_pro'],
@@ -73,7 +74,10 @@ class DayAnalytic(Analitica):
             delete_from_tennis_pro=information['delete_from_tennis_pro'],
             new_from_e_tennis=information['new_from_e_tennis'],
             new_from_global_tennis=information['new_from_global_tennis'],
-            new_from_tennis_pro=information['new_from_tennis_pro']
+            new_from_tennis_pro=information['new_from_tennis_pro'],
+            change_percent_e_tennis=information['change_percent_e_tennis'],
+            change_percent_global_tennis=information['change_percent_global_tennis'],
+            change_percent_tennis_pro=information['change_percent_tennis_pro']
         )
         analitica.save()
 
@@ -95,8 +99,19 @@ class DayAnalytic(Analitica):
             'new_from_e_tennis': self.get_new_items(skus, 'analitica_etennis'),
             'new_from_global_tennis': self.get_new_items(skus, 'analitica_globaltennis'),
             'new_from_tennis_pro': self.get_delete_items(skus, 'analitica_tennispro'),
+            'avr_price': self.get_avr_price(skus),
+            'change_percent_e_tennis': self.get_percent(skus, 'analitica_etennis'),
+            'change_percent_global_tennis': self.get_percent(skus, 'analitica_globaltennis'),
+            'change_percent_tennis_pro': self.get_percent(skus, 'analitica_tennispro')
         }
         return information
+
+    def get_percent(self, sku: dict, shop: str):
+        if shop in sku:
+            if sku[shop].discount != 0:
+                change = (sku[shop].price - sku[shop].discount) / (sku[shop].price / 100)
+                return round(change, 1)
+        return None
 
     def get_new_items(self, sku: dict, shop: str) -> bool:
         if shop in sku:
@@ -117,7 +132,7 @@ class DayAnalytic(Analitica):
             if type_price == 'price':
                 return sku[table].price
             return sku[table].discount
-        return 0
+        return None
 
     def get_best_price(self, sku: dict) -> float:
         price = {}
@@ -128,6 +143,15 @@ class DayAnalytic(Analitica):
                 price[key] = value.discount
         min_price = min(price.values())
         return min_price
+
+    def get_avr_price(self, sku: dict) -> float:
+        price = []
+        for key, value in sku.items():
+            price.append(value.price)
+        avr_price = mean(price)
+        avr_price_round = round(avr_price, 1)
+        return avr_price_round
+
 
 class WeekAnalytic(Analitica):
 
@@ -239,16 +263,16 @@ class WeekAnalytic(Analitica):
     def get_max_price(self, price: dict):
         if price:
             return max(price.values())
-        return 0
+        return None
 
     def get_min_price(self, price: dict):
         if price:
             return min(price.values())
-        return 0
+        return None
 
     def get_percent(self, max_p: float, min_p: float, price: dict):
         if max_p == min_p:
-            return 0
+            return None
         if max_p != 0 or min_p != 0:
             max_val = max(price, key=price.get)
             min_val = min(price, key=price.get)
@@ -260,7 +284,7 @@ class WeekAnalytic(Analitica):
             if max_p == 0:
                 return 100
             percent = (min_p - max_p) / (max_p / 100)
-            return percent
+            return round(percent, 1)
 
     def get_new_items(self, sku: dict, column: str) -> bool:
         for i in sku:
@@ -312,5 +336,5 @@ class MonthAnalytic(WeekAnalytic):
         self.table = MonthlyAnalytics
 
 
-# i = Month()
+# i = DayAnalytic()
 # i.make_data()
